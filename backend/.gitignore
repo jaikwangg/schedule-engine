@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Test database (see tests/conftest.py) — never the dev schedule_engine.db
+test_schedule_engine.db
