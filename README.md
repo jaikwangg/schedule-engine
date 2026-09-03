@@ -19,7 +19,7 @@ cd backend
 # Run test suite (isolated in test_schedule_engine.db — the dev DB is untouched)
 pytest -v
 
-# Seed sample data (CNC machines, Rooms, Staff, Schedules, Bookings, Usages)
+# Seed sample data (Suites, Producers, Colorists, Operators, DIT, Schedules, Bookings)
 python -m app.seed
 
 # Start Uvicorn Server
@@ -73,12 +73,16 @@ schedule-engine/
         │   ├── approvals/        # ✍️ Booking Approval Workflow Queue
         │   ├── usage/            # ⏱️ Actual Usage & Costing Variance Tracker
         │   └── resources/        # ⚙️ Resource & Exception Master
-        │       ├── page.tsx      #    All types overview + maintenance blackouts
-        │       ├── machines/     #    🔧 Machine CRUD
+        │       ├── page.tsx      #    All categories overview + maintenance blackouts
         │       ├── rooms/        #    🚪 Room CRUD
-        │       └── humans/       #    👥 Staff CRUD
+        │       ├── producers/    #    🎬 Producer CRUD
+        │       ├── color-grading-staff/    #  🎨 Color Grading Staff CRUD
+        │       ├── operator-unit-staff/    #  🎛️ Operator Unit Staff CRUD
+        │       └── data-management-staff/  #  💾 Data Management Staff CRUD
         ├── components/           # TimelineGrid, AllocateModal, Navbar, ResourceCrud
-        ├── lib/api.ts            # Typed Client for FastAPI
+        ├── lib/
+        │   ├── api.ts            # Typed Client for FastAPI
+        │   └── resourceTypes.ts  # 🎯 Single source of truth for the 5 categories
         └── types/index.ts        # TypeScript DTOs
 ```
 
@@ -89,11 +93,19 @@ schedule-engine/
 `/resources` keeps the cross-type overview; each schedulable kind also gets its own
 full CRUD screen, all driven by the shared `ResourceCrud` component:
 
-| Screen | Route | Type |
+| Screen | Route | `resource_type` |
 | --- | --- | --- |
-| Machines | `/resources/machines` | `MACHINE` |
 | Rooms | `/resources/rooms` | `ROOM` |
-| Staff | `/resources/humans` | `HUMAN` |
+| Producers | `/resources/producers` | `PRODUCER` |
+| Color Grading Staff | `/resources/color-grading-staff` | `COLOR_GRADING_STAFF` |
+| Operator Unit Staff | `/resources/operator-unit-staff` | `OPERATOR_UNIT_STAFF` |
+| Data Management Staff | `/resources/data-management-staff` | `DATA_MANAGEMENT_STAFF` |
+
+These five are the master categories of the domain — one facility category plus
+the four staff disciplines booked onto it. Labels, colours, icons, routes and
+placeholders all come from **`frontend/src/lib/resourceTypes.ts`**, so renaming a
+category or adding a sixth is a one-file change on the frontend (plus the
+`ResourceType` enum in `backend/app/domain/models.py`).
 
 Each screen supports debounced search, active/inactive filtering, create, edit
 (including a multi-shift weekly working-hours editor), activate/deactivate, and delete.

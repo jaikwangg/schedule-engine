@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Resource, TimelineItem } from '@/types';
+import { resourceTypeShort } from '@/lib/resourceTypes';
 import {
   Clock,
   Play,
@@ -278,7 +279,7 @@ export default function TimelineGrid({
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{resource.code}</span>
                     <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                      {resource.resource_type}
+                      {resourceTypeShort(resource.resource_type)}
                     </span>
                   </div>
                   <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1 line-clamp-1">{resource.name}</h4>

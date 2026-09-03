@@ -16,67 +16,114 @@ async def seed():
     async with async_session_factory() as db:
         print("[SEED] Seeding Resources...")
 
-        # 1. CNC Machines
-        cnc1 = Resource(
-            code="CNC-001",
-            name="5-Axis CNC Milling Machine #1",
-            resource_type="MACHINE",
-            company_id="COM-MFG-01",
-            capacity=1,
-            is_active=True
-        )
-        cnc2 = Resource(
-            code="CNC-002",
-            name="High-Precision CNC Lathe #2",
-            resource_type="MACHINE",
-            company_id="COM-MFG-01",
-            capacity=1,
-            is_active=True
-        )
-
-        # 2. Rooms
-        room1 = Resource(
-            code="ROOM-BOARD",
-            name="Executive Boardroom",
+        # 1. Rooms / Suites
+        grading_suite = Resource(
+            code="ROOM-CG1",
+            name="Color Grading Suite 1 (Baselight)",
             resource_type="ROOM",
-            company_id="COM-HQ-01",
-            capacity=20,
+            company_id="COM-POST-01",
+            capacity=1,
             is_active=True
         )
-        room2 = Resource(
-            code="ROOM-LAB",
-            name="Rapid Prototyping Lab",
+        online_suite = Resource(
+            code="ROOM-ONL1",
+            name="Online / Conform Suite 1",
             resource_type="ROOM",
-            company_id="COM-HQ-01",
-            capacity=6,
+            company_id="COM-POST-01",
+            capacity=1,
+            is_active=True
+        )
+        screening_room = Resource(
+            code="ROOM-SCR",
+            name="Client Screening Room",
+            resource_type="ROOM",
+            company_id="COM-POST-01",
+            capacity=12,
             is_active=True
         )
 
-        # 3. Specialist / Staff
-        staff1 = Resource(
-            code="ENG-SOMCHAI",
-            name="Somchai Prasert (Lead CAM Engineer)",
-            resource_type="HUMAN",
-            company_id="COM-MFG-01",
+        # 2. Producers
+        producer1 = Resource(
+            code="PRD-001",
+            name="Nattaya S. (Senior Post Producer)",
+            resource_type="PRODUCER",
+            company_id="COM-POST-01",
+            capacity=3,
+            is_active=True
+        )
+        producer2 = Resource(
+            code="PRD-002",
+            name="Wichai K. (Post Producer)",
+            resource_type="PRODUCER",
+            company_id="COM-POST-01",
+            capacity=3,
+            is_active=True
+        )
+
+        # 3. Color Grading Staff
+        colorist1 = Resource(
+            code="CGS-001",
+            name="Anan T. (Senior Colorist)",
+            resource_type="COLOR_GRADING_STAFF",
+            company_id="COM-POST-01",
+            capacity=1,
+            is_active=True
+        )
+        colorist2 = Resource(
+            code="CGS-002",
+            name="Pimchanok W. (Colorist)",
+            resource_type="COLOR_GRADING_STAFF",
+            company_id="COM-POST-01",
             capacity=1,
             is_active=True
         )
 
-        db.add_all([cnc1, cnc2, room1, room2, staff1])
+        # 4. Operator Unit Staff
+        operator1 = Resource(
+            code="OPU-001",
+            name="Kittipong R. (Online Operator)",
+            resource_type="OPERATOR_UNIT_STAFF",
+            company_id="COM-POST-01",
+            capacity=1,
+            is_active=True
+        )
+        operator2 = Resource(
+            code="OPU-002",
+            name="Suphachai M. (Conform Operator)",
+            resource_type="OPERATOR_UNIT_STAFF",
+            company_id="COM-POST-01",
+            capacity=1,
+            is_active=True
+        )
+
+        # 5. Data Management Staff
+        dit1 = Resource(
+            code="DMS-001",
+            name="Chalida P. (DIT / Data Manager)",
+            resource_type="DATA_MANAGEMENT_STAFF",
+            company_id="COM-POST-01",
+            capacity=2,
+            is_active=True
+        )
+
+        rooms = [grading_suite, online_suite, screening_room]
+        staff = [producer1, producer2, colorist1, colorist2, operator1, operator2, dit1]
+
+        db.add_all(rooms + staff)
         await db.flush()
 
-        # Add Working Hours (Mon - Fri: 08:00 - 17:00 for CNC, 09:00 - 18:00 for Rooms)
-        for res in [cnc1, cnc2, staff1]:
-            for day in range(0, 5): # Mon(0) to Fri(4)
+        # Working hours: suites run long days (09:00-21:00), staff on 09:00-18:00
+        for res in rooms:
+            for day in range(0, 6): # Mon(0) to Sat(5)
                 db.add(ResourceWorkingHours(
                     resource_id=res.id,
                     day_of_week=day,
-                    start_time=time(8, 0),
-                    end_time=time(17, 0),
+                    start_time=time(9, 0),
+                    end_time=time(21, 0),
                     is_active=True
                 ))
 
-        for res in [room1, room2]:
+        for res in staff:
             for day in range(0, 5): # Mon(0) to Fri(4)
                 db.add(ResourceWorkingHours(
                     resource_id=res.id,
@@ -88,96 +135,96 @@ async def seed():
 
         await db.flush()
 
-        # Add Exceptions (e.g. Maintenance on CNC-001)
+        # Exception: projector/calibration downtime on the grading suite
         today = datetime.utcnow().date()
         maint_start = datetime.combine(today, time(13, 0))
         maint_end = datetime.combine(today, time(16, 0))
 
         exc1 = ResourceException(
-            resource_id=cnc1.id,
+            resource_id=grading_suite.id,
             exception_type="MAINTENANCE",
             start_at=maint_start,
             end_at=maint_end,
-            reason="Monthly Spindle Lubrication & Alignment Calibration"
+            reason="Monthly projector calibration & display profiling"
         )
         db.add(exc1)
         await db.flush()
 
-        # Add Sample Schedules
-        # Morning Production Order on CNC-001 (09:00 - 12:00)
+        # Sample Schedules
+        # Grading session in Suite 1 (09:00 - 12:00)
         sch1 = Schedule(
-            resource_id=cnc1.id,
+            resource_id=grading_suite.id,
             start_at=datetime.combine(today, time(9, 0)),
             end_at=datetime.combine(today, time(12, 0)),
             status="CONFIRMED",
             priority=10,
-            source_type="PRODUCTION_ORDER",
-            source_id="PO-2026-8891",
-            metadata_json={"product": "Turbine Blade Impeller", "batch_size": 25}
-        )
-
-        # Project Task on CNC-002 (09:00 - 14:00)
-        sch2 = Schedule(
-            resource_id=cnc2.id,
-            start_at=datetime.combine(today, time(9, 0)),
-            end_at=datetime.combine(today, time(14, 0)),
-            status="CONFIRMED",
-            priority=30,
             source_type="PROJECT_TASK",
-            source_id="TASK-EV-MOTOR-SHAFT",
-            metadata_json={"project": "EV Powertrain Project"}
+            source_id="JOB-2026-8891",
+            metadata_json={"title": "TVC — Bangkok Airways 30s", "stage": "Primary Grade"}
         )
 
-        # Booking on Boardroom (14:00 - 16:00)
+        # The colorist assigned to that same session
+        sch2 = Schedule(
+            resource_id=colorist1.id,
+            start_at=datetime.combine(today, time(9, 0)),
+            end_at=datetime.combine(today, time(12, 0)),
+            status="CONFIRMED",
+            priority=10,
+            source_type="PROJECT_TASK",
+            source_id="JOB-2026-8891",
+            metadata_json={"title": "TVC — Bangkok Airways 30s", "role": "Colorist"}
+        )
+
+        # Client review booked into the screening room (14:00 - 16:00)
         sch3 = Schedule(
-            resource_id=room1.id,
+            resource_id=screening_room.id,
             start_at=datetime.combine(today, time(14, 0)),
             end_at=datetime.combine(today, time(16, 0)),
             status="TENTATIVE",
             priority=100,
             source_type="BOOKING",
             source_id="BK-20260902-DEMO",
-            metadata_json={"meeting_title": "Q3 Engineering Review"}
+            metadata_json={"meeting_title": "Client Review — Episode 04 Final Grade"}
         )
 
         db.add_all([sch1, sch2, sch3])
         await db.flush()
 
-        # Add Booking Entity
+        # Booking Entity behind the screening room slot
         booking1 = Booking(
             booking_code="BK-20260902-DEMO",
             schedule_id=sch3.id,
             requester_id="REQ-USER-001",
-            requester_name="Kittisak N.",
-            requester_dept="R&D Department",
-            purpose="Quarterly Engineering Milestone and Resource Review",
+            requester_name="Nattaya S.",
+            requester_dept="Post Production",
+            purpose="Client review session for Episode 04 final grade",
             status="REQUESTED"
         )
         db.add(booking1)
         await db.flush()
 
-        # Add Sample Actual Usage & Cost on CNC-002
+        # Actual usage & cost recorded against the colorist's session
         usage1 = ResourceUsage(
             schedule_id=sch2.id,
-            resource_id=cnc2.id,
+            resource_id=colorist1.id,
             actual_start_at=datetime.combine(today, time(9, 5)),
-            actual_end_at=datetime.combine(today, time(13, 50)),
-            actual_duration_minutes=285, # 4h 45m
-            meter_start=Decimal("1250.5"),
-            meter_end=Decimal("1255.25"),
-            operator_id="OP-WICHAI-09",
-            telemetry_data={"avg_spindle_load_pct": 72.4, "max_temperature_c": 58.2}
+            actual_end_at=datetime.combine(today, time(12, 20)),
+            actual_duration_minutes=195, # 3h 15m
+            meter_start=Decimal("0"),
+            meter_end=Decimal("0"),
+            operator_id="CGS-001",
+            telemetry_data={"shots_graded": 42, "render_passes": 3}
         )
         db.add(usage1)
         await db.flush()
 
         cost1 = UsageCost(
             usage_id=usage1.id,
-            hourly_rate=Decimal("1200.00"), # 1200 THB/hr
-            setup_cost=Decimal("500.00"),
-            total_cost=Decimal("6200.00"),
-            billing_company_id="COM-AUTO-02",
-            charging_company_id="COM-MFG-01",
+            hourly_rate=Decimal("2500.00"), # 2500 THB/hr
+            setup_cost=Decimal("0.00"),
+            total_cost=Decimal("8125.00"), # 3.25h * 2500
+            billing_company_id="COM-AGENCY-02",
+            charging_company_id="COM-POST-01",
             status="CALCULATED"
         )
         db.add(cost1)

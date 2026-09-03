@@ -3,7 +3,7 @@ import ResourceCrud from '@/components/ResourceCrud';
 
 export const metadata: Metadata = {
   title: 'Rooms | Schedule Core Engine',
-  description: 'Create, update and retire bookable rooms and spaces.',
+  description: 'Create, update and retire bookable suites and rooms.',
 };
 
 export default function RoomsPage() {

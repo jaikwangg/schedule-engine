@@ -16,7 +16,8 @@ class Resource(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     code = Column(String(50), unique=True, nullable=False, index=True) # e.g. 'CNC-001'
     name = Column(String(255), nullable=False)
-    resource_type = Column(String(50), nullable=False, index=True) # 'MACHINE', 'ROOM', 'HUMAN', 'VEHICLE', 'TOOL'
+    resource_type = Column(String(50), nullable=False, index=True)
+    # 'ROOM', 'PRODUCER', 'COLOR_GRADING_STAFF', 'OPERATOR_UNIT_STAFF', 'DATA_MANAGEMENT_STAFF'
     company_id = Column(String(36), nullable=False, default=generate_uuid)
     capacity = Column(Integer, default=1)
     is_active = Column(Boolean, default=True)

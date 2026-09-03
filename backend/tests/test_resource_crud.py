@@ -4,12 +4,22 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 
+from app.domain.models import ResourceType
 from app.main import app
 from app.core.database import engine, Base, async_session_factory
 from app.infrastructure.models import Resource, ResourceWorkingHours
 
-# The three master types the CRUD screens are built around
-CRUD_TYPES = ["MACHINE", "ROOM", "HUMAN"]
+# Every category the master screens cover
+CRUD_TYPES = [t.value for t in ResourceType]
+
+# id -> (code, name, resource_type) for the rows every test starts from
+SEED_ROWS = {
+    "seed-room": ("ROOM-001", "Color Grading Suite 1", "ROOM"),
+    "seed-producer": ("PRD-001", "Nattaya S. (Post Producer)", "PRODUCER"),
+    "seed-colorist": ("CGS-001", "Anan T. (Senior Colorist)", "COLOR_GRADING_STAFF"),
+    "seed-operator": ("OPU-001", "Kittipong R. (Online Operator)", "OPERATOR_UNIT_STAFF"),
+    "seed-data": ("DMS-001", "Chalida P. (DIT / Data Manager)", "DATA_MANAGEMENT_STAFF"),
+}
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -18,23 +28,23 @@ async def client():
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
-    # One resource per CRUD type so list filtering is observable
+    # One resource per category so list filtering is observable
     async with async_session_factory() as db:
-        for idx, rtype in enumerate(CRUD_TYPES, start=1):
+        for res_id, (code, name, rtype) in SEED_ROWS.items():
             db.add(Resource(
-                id=f"seed-{rtype.lower()}",
-                code=f"{rtype[:3]}-{idx:03d}",
-                name=f"Seed {rtype.title()}",
+                id=res_id,
+                code=code,
+                name=name,
                 resource_type=rtype,
                 company_id="COM-TEST",
                 capacity=1,
                 is_active=True,
             ))
         db.add(ResourceWorkingHours(
-            resource_id="seed-machine",
+            resource_id="seed-room",
             day_of_week=0,
-            start_time=dt.time(8, 0),
-            end_time=dt.time(17, 0),
+            start_time=dt.time(9, 0),
+            end_time=dt.time(21, 0),
             is_active=True,
         ))
         await db.commit()
@@ -47,10 +57,20 @@ async def client():
         await conn.run_sync(Base.metadata.drop_all)
 
 
+def test_crud_types_cover_the_five_master_categories():
+    assert CRUD_TYPES == [
+        "ROOM",
+        "PRODUCER",
+        "COLOR_GRADING_STAFF",
+        "OPERATOR_UNIT_STAFF",
+        "DATA_MANAGEMENT_STAFF",
+    ]
+
+
 @pytest.mark.parametrize("resource_type", CRUD_TYPES)
 @pytest.mark.asyncio
 async def test_resource_crud_roundtrip(client: AsyncClient, resource_type: str):
-    """Create -> read -> list-filter -> update -> hard delete, for each master type."""
+    """Create -> read -> list-filter -> update -> hard delete, for each category."""
     code = f"CRUD-{resource_type}"
 
     create_res = await client.post("/api/v1/resources", json={
@@ -60,7 +80,7 @@ async def test_resource_crud_roundtrip(client: AsyncClient, resource_type: str):
         "company_id": "COM-TEST",
         "capacity": 2,
         "working_hours": [
-            {"day_of_week": 0, "start_time": "08:00:00", "end_time": "17:00:00", "is_active": True}
+            {"day_of_week": 0, "start_time": "09:00:00", "end_time": "18:00:00", "is_active": True}
         ],
     })
     assert create_res.status_code == 201
@@ -74,7 +94,7 @@ async def test_resource_crud_roundtrip(client: AsyncClient, resource_type: str):
     assert get_res.status_code == 200
     assert get_res.json()["code"] == code
 
-    # List filtered by type -> the seeded one plus the new one, nothing else
+    # List filtered by category -> the seeded one plus the new one, nothing else
     list_res = await client.get(f"/api/v1/resources?resource_type={resource_type}")
     assert list_res.status_code == 200
     listed = list_res.json()
@@ -103,38 +123,50 @@ async def test_resource_crud_roundtrip(client: AsyncClient, resource_type: str):
 
 
 @pytest.mark.asyncio
+async def test_retired_categories_are_rejected(client: AsyncClient):
+    """MACHINE / HUMAN / VEHICLE / TOOL are no longer part of the domain."""
+    for retired in ["MACHINE", "HUMAN", "VEHICLE", "TOOL"]:
+        res = await client.post("/api/v1/resources", json={
+            "code": f"OLD-{retired}",
+            "name": "Legacy category",
+            "resource_type": retired,
+        })
+        assert res.status_code == 422, f"{retired} should no longer be accepted"
+
+
+@pytest.mark.asyncio
 async def test_duplicate_code_is_rejected_on_create_and_update(client: AsyncClient):
     dup = await client.post("/api/v1/resources", json={
-        "code": "MAC-001",  # already taken by the seeded machine
+        "code": "ROOM-001",  # already taken by the seeded room
         "name": "Clash",
-        "resource_type": "MACHINE",
+        "resource_type": "ROOM",
     })
     assert dup.status_code == 400
 
-    patch_res = await client.patch("/api/v1/resources/seed-room", json={"code": "MAC-001"})
+    patch_res = await client.patch("/api/v1/resources/seed-producer", json={"code": "ROOM-001"})
     assert patch_res.status_code == 400
 
     # Patching a resource with its own code must still succeed
-    same = await client.patch("/api/v1/resources/seed-room", json={"code": "ROO-002"})
+    same = await client.patch("/api/v1/resources/seed-producer", json={"code": "PRD-001"})
     assert same.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_delete_deactivates_when_schedules_exist(client: AsyncClient):
     alloc = await client.post("/api/v1/schedules", json={
-        "resource_id": "seed-machine",
-        "start_at": "2026-09-07T09:00:00",
-        "end_at": "2026-09-07T11:00:00",
-        "source_type": "PRODUCTION_ORDER",
-        "source_id": "PO-CRUD-1",
+        "resource_id": "seed-room",
+        "start_at": "2026-09-07T10:00:00",
+        "end_at": "2026-09-07T12:00:00",
+        "source_type": "PROJECT_TASK",
+        "source_id": "JOB-CRUD-1",
     })
     assert alloc.status_code == 201
 
-    del_res = await client.delete("/api/v1/resources/seed-machine")
+    del_res = await client.delete("/api/v1/resources/seed-room")
     assert del_res.status_code == 200
     assert del_res.json()["action"] == "deactivated"
 
-    still_there = await client.get("/api/v1/resources/seed-machine")
+    still_there = await client.get("/api/v1/resources/seed-room")
     assert still_there.status_code == 200
     assert still_there.json()["is_active"] is False
 
@@ -142,7 +174,7 @@ async def test_delete_deactivates_when_schedules_exist(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_working_hours_crud(client: AsyncClient):
     # Create
-    add_res = await client.post("/api/v1/resources/seed-room/working-hours", json={
+    add_res = await client.post("/api/v1/resources/seed-colorist/working-hours", json={
         "day_of_week": 2,
         "start_time": "09:00:00",
         "end_time": "12:00:00",
@@ -152,7 +184,7 @@ async def test_working_hours_crud(client: AsyncClient):
     wh_id = add_res.json()["id"]
 
     # Identical entry is refused
-    dup_res = await client.post("/api/v1/resources/seed-room/working-hours", json={
+    dup_res = await client.post("/api/v1/resources/seed-colorist/working-hours", json={
         "day_of_week": 2,
         "start_time": "09:00:00",
         "end_time": "12:00:00",
@@ -174,24 +206,24 @@ async def test_working_hours_crud(client: AsyncClient):
     assert bad_res.status_code == 422
 
     # Bulk replace swaps the whole weekly template
-    put_res = await client.put("/api/v1/resources/seed-room/working-hours", json=[
-        {"day_of_week": d, "start_time": "08:00:00", "end_time": "17:00:00", "is_active": True}
+    put_res = await client.put("/api/v1/resources/seed-colorist/working-hours", json=[
+        {"day_of_week": d, "start_time": "09:00:00", "end_time": "18:00:00", "is_active": True}
         for d in range(5)
     ])
     assert put_res.status_code == 200
     assert len(put_res.json()) == 5
 
     # Delete a single entry
-    entries = (await client.get("/api/v1/resources/seed-room/working-hours")).json()
+    entries = (await client.get("/api/v1/resources/seed-colorist/working-hours")).json()
     del_res = await client.delete(f"/api/v1/resources/working-hours/{entries[0]['id']}")
     assert del_res.status_code == 200
-    assert len((await client.get("/api/v1/resources/seed-room/working-hours")).json()) == 4
+    assert len((await client.get("/api/v1/resources/seed-colorist/working-hours")).json()) == 4
 
 
 @pytest.mark.asyncio
 async def test_exception_crud_and_listing(client: AsyncClient):
     create_res = await client.post("/api/v1/resources/exceptions", json={
-        "resource_id": "seed-human",
+        "resource_id": "seed-operator",
         "exception_type": "HOLIDAY",
         "start_at": "2026-09-10T00:00:00",
         "end_at": "2026-09-11T00:00:00",
@@ -202,7 +234,7 @@ async def test_exception_crud_and_listing(client: AsyncClient):
 
     # Inverted range is rejected at the schema level
     bad_res = await client.post("/api/v1/resources/exceptions", json={
-        "resource_id": "seed-human",
+        "resource_id": "seed-operator",
         "exception_type": "HOLIDAY",
         "start_at": "2026-09-11T00:00:00",
         "end_at": "2026-09-10T00:00:00",
@@ -210,7 +242,7 @@ async def test_exception_crud_and_listing(client: AsyncClient):
     assert bad_res.status_code == 422
 
     # The literal /exceptions path must not be swallowed by /{resource_id}
-    list_res = await client.get("/api/v1/resources/exceptions?resource_id=seed-human")
+    list_res = await client.get("/api/v1/resources/exceptions?resource_id=seed-operator")
     assert list_res.status_code == 200
     assert [e["id"] for e in list_res.json()] == [exc_id]
 
@@ -227,6 +259,6 @@ async def test_exception_crud_and_listing(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_search_filter(client: AsyncClient):
-    res = await client.get("/api/v1/resources?q=seed%20room")
+    res = await client.get("/api/v1/resources?q=colorist")
     assert res.status_code == 200
-    assert [r["id"] for r in res.json()] == ["seed-room"]
+    assert [r["id"] for r in res.json()] == ["seed-colorist"]

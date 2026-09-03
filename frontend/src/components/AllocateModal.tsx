@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Resource, ConflictCheckResponse, SourceType } from '@/types';
 import { api } from '@/lib/api';
+import { resourceTypeLabel } from '@/lib/resourceTypes';
 import { 
   X, 
   CheckCircle2, 
@@ -167,7 +168,7 @@ export default function AllocateModal({
             >
               {resources.map((r) => (
                 <option key={r.id} value={r.id}>
-                  [{r.code}] {r.name} ({r.resource_type})
+                  [{r.code}] {r.name} ({resourceTypeLabel(r.resource_type)})
                 </option>
               ))}
             </select>

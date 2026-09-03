@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Resource, DayAvailability, TimeSlot } from '@/types';
 import { api } from '@/lib/api';
+import { resourceTypeLabel } from '@/lib/resourceTypes';
 import { 
   Layers, 
   Calendar, 
@@ -206,7 +207,7 @@ export default function BookingPortalPage() {
                     <Sparkles className="w-3.5 h-3.5 text-blue-500" />
                     Resource Details
                   </div>
-                  <p className="text-zinc-600 dark:text-zinc-400">Type: {selectedResource.resource_type}</p>
+                  <p className="text-zinc-600 dark:text-zinc-400">Type: {resourceTypeLabel(selectedResource.resource_type)}</p>
                   <p className="text-zinc-600 dark:text-zinc-400">Company ID: {selectedResource.company_id}</p>
                 </div>
               )}

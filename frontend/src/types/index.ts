@@ -1,4 +1,9 @@
-export type ResourceType = 'MACHINE' | 'ROOM' | 'HUMAN' | 'VEHICLE' | 'TOOL';
+export type ResourceType =
+  | 'ROOM'
+  | 'PRODUCER'
+  | 'COLOR_GRADING_STAFF'
+  | 'OPERATOR_UNIT_STAFF'
+  | 'DATA_MANAGEMENT_STAFF';
 export type ScheduleStatus = 'PLANNED' | 'TENTATIVE' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 export type SourceType = 'BOOKING' | 'PRODUCTION_ORDER' | 'PROJECT_TASK' | 'MAINTENANCE' | 'INTERCOMPANY' | 'INTERNAL_WORK';
 export type BookingStatus = 'DRAFT' | 'REQUESTED' | 'PENDING_APPROVAL' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';

@@ -3,13 +3,16 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Cpu, DoorOpen, LayoutGrid, Users } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
+import { RESOURCE_TYPE_LIST } from '@/lib/resourceTypes';
 
 const TABS = [
-  { href: '/resources', label: 'All Resources', icon: LayoutGrid },
-  { href: '/resources/machines', label: 'Machines', icon: Cpu },
-  { href: '/resources/rooms', label: 'Rooms', icon: DoorOpen },
-  { href: '/resources/humans', label: 'Staff', icon: Users },
+  { href: '/resources', label: 'All', icon: LayoutGrid },
+  ...RESOURCE_TYPE_LIST.map((meta) => ({
+    href: `/resources/${meta.slug}`,
+    label: meta.short,
+    icon: meta.icon,
+  })),
 ];
 
 export default function ResourceMasterTabs() {

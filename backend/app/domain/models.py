@@ -3,11 +3,17 @@ from datetime import datetime
 from typing import NamedTuple, Optional
 
 class ResourceType(str, Enum):
-    MACHINE = "MACHINE"
+    """The schedulable categories of this post-production house.
+
+    One facility category (rooms/suites) plus the four staff disciplines that
+    get booked onto them.
+    """
+
     ROOM = "ROOM"
-    HUMAN = "HUMAN"
-    VEHICLE = "VEHICLE"
-    TOOL = "TOOL"
+    PRODUCER = "PRODUCER"
+    COLOR_GRADING_STAFF = "COLOR_GRADING_STAFF"
+    OPERATOR_UNIT_STAFF = "OPERATOR_UNIT_STAFF"
+    DATA_MANAGEMENT_STAFF = "DATA_MANAGEMENT_STAFF"
 
 class ScheduleStatus(str, Enum):
     PLANNED = "PLANNED"

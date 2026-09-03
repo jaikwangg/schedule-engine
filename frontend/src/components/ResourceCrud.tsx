@@ -6,8 +6,6 @@ import {
   Building2,
   CheckCircle2,
   Clock,
-  Cpu,
-  DoorOpen,
   Edit3,
   Loader2,
   Plus,
@@ -15,75 +13,13 @@ import {
   RefreshCw,
   Search,
   Trash2,
-  Users,
   X,
 } from 'lucide-react';
 import { Resource, ResourceType, WorkingHoursInput } from '@/types';
 import { api } from '@/lib/api';
-
-export type CrudResourceType = Extract<ResourceType, 'MACHINE' | 'ROOM' | 'HUMAN'>;
+import { RESOURCE_TYPE_META } from '@/lib/resourceTypes';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-interface TypeConfig {
-  label: string;
-  plural: string;
-  icon: React.ComponentType<{ className?: string }>;
-  blurb: string;
-  codePlaceholder: string;
-  namePlaceholder: string;
-  capacityLabel: string;
-  capacityHint: string;
-  companyLabel: string;
-  accentText: string;
-  accentButton: string;
-  accentSoft: string;
-}
-
-const TYPE_CONFIG: Record<CrudResourceType, TypeConfig> = {
-  MACHINE: {
-    label: 'Machine',
-    plural: 'Machines',
-    icon: Cpu,
-    blurb: 'Production machinery available to the schedule engine — codes, capacity and weekly running hours.',
-    codePlaceholder: 'CNC-003',
-    namePlaceholder: '5-Axis CNC Milling Center 03',
-    capacityLabel: 'Parallel jobs',
-    capacityHint: 'How many jobs this machine can run at the same time.',
-    companyLabel: 'Plant / Company',
-    accentText: 'text-blue-600 dark:text-blue-400',
-    accentButton: 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20',
-    accentSoft: 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300',
-  },
-  ROOM: {
-    label: 'Room',
-    plural: 'Rooms',
-    icon: DoorOpen,
-    blurb: 'Bookable rooms and spaces — codes, seating capacity and the hours they can be reserved.',
-    codePlaceholder: 'ROOM-B',
-    namePlaceholder: 'Meeting Room B (12 seats)',
-    capacityLabel: 'Seats',
-    capacityHint: 'How many concurrent bookings this room accepts.',
-    companyLabel: 'Site / Company',
-    accentText: 'text-emerald-600 dark:text-emerald-400',
-    accentButton: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20',
-    accentSoft: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300',
-  },
-  HUMAN: {
-    label: 'Staff',
-    plural: 'Staff',
-    icon: Users,
-    blurb: 'People who can be scheduled — operators, technicians and specialists with their shift patterns.',
-    codePlaceholder: 'EMP-1042',
-    namePlaceholder: 'Somchai P. — Senior CNC Operator',
-    capacityLabel: 'Concurrent assignments',
-    capacityHint: 'How many jobs this person can be booked on at once.',
-    companyLabel: 'Department / Company',
-    accentText: 'text-violet-600 dark:text-violet-400',
-    accentButton: 'bg-violet-600 hover:bg-violet-700 shadow-violet-500/20',
-    accentSoft: 'bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300',
-  },
-};
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 type Notice = { tone: 'success' | 'error'; text: string };
@@ -92,7 +28,7 @@ interface ShiftRow extends WorkingHoursInput {
   key: string;
 }
 
-const DEFAULT_COMPANY = 'COM-MFG-01';
+const DEFAULT_COMPANY = 'COM-POST-01';
 
 /** "08:00:00" (API) -> "08:00" (<input type="time">) */
 const toInputTime = (value: string) => value.slice(0, 5);
@@ -100,7 +36,7 @@ const toInputTime = (value: string) => value.slice(0, 5);
 const toApiTime = (value: string) => (value.length === 5 ? `${value}:00` : value);
 
 let shiftKeySeq = 0;
-const makeShift = (day: number, start = '08:00:00', end = '17:00:00'): ShiftRow => ({
+const makeShift = (day: number, start = '09:00:00', end = '18:00:00'): ShiftRow => ({
   key: `shift-${shiftKeySeq++}`,
   day_of_week: day,
   start_time: start,
@@ -118,8 +54,8 @@ const shiftsFromResource = (resource: Resource): ShiftRow[] => {
     .map((wh) => makeShift(wh.day_of_week, wh.start_time, wh.end_time));
 };
 
-export default function ResourceCrud({ type }: { type: CrudResourceType }) {
-  const config = TYPE_CONFIG[type];
+export default function ResourceCrud({ type }: { type: ResourceType }) {
+  const config = RESOURCE_TYPE_META[type];
   const TypeIcon = config.icon;
 
   const [items, setItems] = useState<Resource[]>([]);
@@ -630,7 +566,7 @@ export default function ResourceCrud({ type }: { type: CrudResourceType }) {
                       onClick={() => setShifts(weekdayShifts())}
                       className="px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                     >
-                      Mon-Fri 08:00-17:00
+                      Mon-Fri 09:00-18:00
                     </button>
                     <button
                       type="button"

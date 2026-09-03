@@ -18,9 +18,9 @@ async def client():
     async with async_session_factory() as db:
         res = Resource(
             id="test-res-001",
-            code="CNC-TEST",
-            name="Test CNC Machine",
-            resource_type="MACHINE",
+            code="SUITE-TEST",
+            name="Test Grading Suite",
+            resource_type="ROOM",
             company_id="COM-TEST",
             capacity=1,
             is_active=True
@@ -56,7 +56,7 @@ async def test_list_resources(client: AsyncClient):
     assert response.status_code == 200
     data = response.json()
     assert len(data) >= 1
-    assert data[0]["code"] == "CNC-TEST"
+    assert data[0]["code"] == "SUITE-TEST"
 
 @pytest.mark.asyncio
 async def test_schedule_allocation_and_conflict_prevention(client: AsyncClient):

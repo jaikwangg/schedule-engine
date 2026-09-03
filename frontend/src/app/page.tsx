@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Resource, TimelineItem } from '@/types';
 import { api } from '@/lib/api';
+import { RESOURCE_TYPE_LIST } from '@/lib/resourceTypes';
 import TimelineGrid from '@/components/TimelineGrid';
 import AllocateModal from '@/components/AllocateModal';
 import EditScheduleModal from '@/components/EditScheduleModal';
@@ -194,17 +195,17 @@ export default function TimelineDashboardPage() {
           {/* Resource type filter below mini calendar */}
           <div className="mt-3 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-2.5 space-y-1">
             <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-2">Resource Filter</p>
-            {['ALL', 'MACHINE', 'ROOM', 'HUMAN'].map((t) => (
+            {[{ value: 'ALL', label: 'All' }, ...RESOURCE_TYPE_LIST.map((m) => ({ value: m.type as string, label: m.short }))].map((t) => (
               <button
-                key={t}
-                onClick={() => setResourceTypeFilter(t)}
+                key={t.value}
+                onClick={() => setResourceTypeFilter(t.value)}
                 className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  resourceTypeFilter === t
+                  resourceTypeFilter === t.value
                     ? 'bg-blue-600 text-white font-bold shadow-xs'
                     : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                 }`}
               >
-                {t}
+                {t.label}
               </button>
             ))}
           </div>

@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Resource, ResourceType, ExceptionType } from '@/types';
 import { api } from '@/lib/api';
+import { RESOURCE_TYPE_LIST, resourceTypeLabel } from '@/lib/resourceTypes';
 import { 
-  Cpu, 
+  LayoutGrid, 
   Plus, 
   Wrench, 
   Calendar, 
@@ -28,8 +29,8 @@ export default function ResourcesPage() {
   const [isAddResourceOpen, setIsAddResourceOpen] = useState<boolean>(false);
   const [code, setCode] = useState<string>('');
   const [name, setName] = useState<string>('');
-  const [resourceType, setResourceType] = useState<ResourceType>('MACHINE');
-  const [companyId, setCompanyId] = useState<string>('COM-MFG-01');
+  const [resourceType, setResourceType] = useState<ResourceType>('ROOM');
+  const [companyId, setCompanyId] = useState<string>('COM-POST-01');
 
   // Edit Resource Modal
   const [selectedResourceForEdit, setSelectedResourceForEdit] = useState<Resource | null>(null);
@@ -73,11 +74,11 @@ export default function ResourcesPage() {
         resource_type: resourceType,
         company_id: companyId,
         is_active: true,
-        // Default working hours Mon-Fri 08:00 - 17:00
+        // Default working hours Mon-Fri 09:00 - 18:00
         working_hours: [0, 1, 2, 3, 4].map((day) => ({
           day_of_week: day,
-          start_time: '08:00:00',
-          end_time: '17:00:00',
+          start_time: '09:00:00',
+          end_time: '18:00:00',
           is_active: true,
         })),
       });
@@ -163,11 +164,11 @@ export default function ResourcesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-            <Cpu className="w-6 h-6 text-blue-600" />
+            <LayoutGrid className="w-6 h-6 text-blue-600" />
             <span>Resource & Availability Master</span>
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Define machinery, rooms, personnel, working hours templates, and maintenance exceptions
+            All schedulable categories in one view — rooms, producers and crew, with working hours and blackout windows
           </p>
         </div>
 
@@ -212,7 +213,7 @@ export default function ResourcesPage() {
                       {r.code}
                     </span>
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                      {r.resource_type}
+                      {resourceTypeLabel(r.resource_type)}
                     </span>
                   </div>
                   <h3 className="font-semibold text-base text-zinc-900 dark:text-zinc-100 mt-1">
@@ -366,7 +367,7 @@ export default function ResourcesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-md w-full border border-zinc-200 dark:border-zinc-800 space-y-4">
             <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-blue-600" />
+              <LayoutGrid className="w-4 h-4 text-blue-600" />
               <span>Register New Resource</span>
             </h3>
 
@@ -375,7 +376,7 @@ export default function ResourcesPage() {
                 <label className="block font-semibold mb-1">Resource Code (Unique) *</label>
                 <input
                   type="text"
-                  placeholder="e.g. CNC-003, ROOM-B"
+                  placeholder="e.g. ROOM-CG2, CGS-003"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   className="w-full p-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 font-mono"
@@ -387,7 +388,7 @@ export default function ResourcesPage() {
                 <label className="block font-semibold mb-1">Resource Name *</label>
                 <input
                   type="text"
-                  placeholder="e.g. 5-Axis CNC Milling Center 03"
+                  placeholder="e.g. Color Grading Suite 2"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800"
@@ -403,11 +404,9 @@ export default function ResourcesPage() {
                     onChange={(e) => setResourceType(e.target.value as ResourceType)}
                     className="w-full p-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800"
                   >
-                    <option value="MACHINE">Machine</option>
-                    <option value="ROOM">Room</option>
-                    <option value="HUMAN">Human / Staff</option>
-                    <option value="VEHICLE">Vehicle</option>
-                    <option value="TOOL">Tool</option>
+                    {RESOURCE_TYPE_LIST.map((meta) => (
+                      <option key={meta.type} value={meta.type}>{meta.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -518,7 +517,7 @@ export default function ResourcesPage() {
                 <label className="block font-semibold mb-1">Reason / Description</label>
                 <input
                   type="text"
-                  placeholder="e.g. Spindle alignment & oil change"
+                  placeholder="e.g. Projector calibration & display profiling"
                   value={excReason}
                   onChange={(e) => setExcReason(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800"
