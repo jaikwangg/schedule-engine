@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# SQLite databases are regenerated with `python -m app.seed`
+*.db
+*.db-journal
+*.sqlite3
+
+# Node / Next.js (frontend/.gitignore covers the rest)
+node_modules/
+.next/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
