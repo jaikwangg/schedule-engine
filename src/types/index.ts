@@ -6,12 +6,16 @@ export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type ExceptionType = 'MAINTENANCE' | 'HOLIDAY' | 'BREAKDOWN' | 'RESTRICTED';
 export type CostStatus = 'CALCULATED' | 'INVOICED' | 'SETTLED';
 
-export interface WorkingHours {
-  id?: string;
+export interface WorkingHoursInput {
   day_of_week: number;
   start_time: string;
   end_time: string;
   is_active: boolean;
+}
+
+export interface WorkingHours extends WorkingHoursInput {
+  id?: string;
+  resource_id?: string;
 }
 
 export interface ResourceException {
@@ -36,6 +40,27 @@ export interface Resource {
   updated_at: string;
   working_hours?: WorkingHours[];
   exceptions?: ResourceException[];
+}
+
+/** Payload for POST /resources */
+export interface ResourceInput {
+  code: string;
+  name: string;
+  resource_type: ResourceType;
+  company_id?: string;
+  capacity?: number;
+  is_active?: boolean;
+  working_hours?: WorkingHoursInput[];
+}
+
+/** Payload for PATCH /resources/{id} — every field is optional */
+export type ResourcePatch = Partial<Omit<ResourceInput, 'working_hours'>>;
+
+/** DELETE /resources/{id} either removes the row or just deactivates it */
+export interface ResourceDeleteResult {
+  message: string;
+  id: string;
+  action: 'deleted' | 'deactivated';
 }
 
 export interface Schedule {

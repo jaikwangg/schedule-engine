@@ -59,7 +59,9 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              // Sub-routes (e.g. /resources/machines) keep their parent tab lit
+              const isActive =
+                pathname === item.href || (item.href !== '/' && pathname.startsWith(`${item.href}/`));
               return (
                 <Link
                   key={item.href}

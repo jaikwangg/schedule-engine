@@ -131,6 +131,22 @@ export default function ResourcesPage() {
     }
   };
 
+  const handleDeleteResource = async (r: Resource) => {
+    const ok = confirm(
+      `Delete ${r.code} — ${r.name}?\n\n` +
+      'It is removed together with its working hours and exceptions. ' +
+      'If any schedule or usage record still references it, the engine keeps the history and deactivates it instead.'
+    );
+    if (!ok) return;
+    try {
+      const result = await api.deleteResource(r.id);
+      alert(result.message);
+      fetchResources();
+    } catch (err: any) {
+      alert(`Error deleting resource: ${err.message}`);
+    }
+  };
+
   const handleDeleteException = async (excId: string) => {
     if (!confirm('Are you sure you want to delete this exception?')) return;
     try {
@@ -211,6 +227,13 @@ export default function ResourcesPage() {
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                   </button>
+                  <button
+                    onClick={() => handleDeleteResource(r)}
+                    className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                    title="Delete Resource"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                   <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${r.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400'}`}>
                     <span className={`w-2 h-2 rounded-full ${r.is_active ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
                     {r.is_active ? 'Active' : 'Inactive'}
@@ -242,7 +265,7 @@ export default function ResourcesPage() {
               {/* Blackout / Exceptions */}
               {r.exceptions && r.exceptions.length > 0 && (
                 <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                  <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                  <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                     <Wrench className="w-3 h-3" /> Scheduled Exceptions ({r.exceptions.length})
                   </span>
                   <div className="space-y-1">
